@@ -1,0 +1,3 @@
+FAD (FPGA Allocation Deamon)
+This project focuses on creating a Daemon which allocates FPGA resources simultaneously to different processes. This will be achieved by incorporating HLS tools to generate Verilog files for FPGA, and  mangage FPGA resource partitioning and FPGA partial reconfiguration.
+
