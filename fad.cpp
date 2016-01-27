@@ -12,9 +12,8 @@ using namespace std;
 
 #define DAEMON_NAME "fad"
 
-void process(){
-
-    syslog (LOG_NOTICE, "Writing to my Syslog");
+void process(int i){
+    syslog (LOG_NOTICE, "Writing to my Syslog %d",i);
 }   
 
 int main(int argc, char *argv[]) {
@@ -26,7 +25,7 @@ int main(int argc, char *argv[]) {
     syslog(LOG_INFO, "Entering Daemon");
 
     pid_t pid, sid;
-
+/*
    //Fork the Parent Process
     pid = fork();
 
@@ -50,13 +49,15 @@ int main(int argc, char *argv[]) {
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
-
+*/
     //----------------
     //Main Process
     //----------------
+    int i = 0;
     while(true){
-        process();    //Run our Process
-        sleep(60);    //Sleep for 60 seconds
+        process(i);    //Run our Process
+        sleep(5);    //Sleep for 60 seconds
+    	i++;
     }
 
     //Close the log

@@ -14,4 +14,4 @@ sudo chmod 775 /etc/init.d/fad
 
 #starting the daemon
 
-sudo /etc/init.d/fad -start
+sudo /etc/init.d/fad start

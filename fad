@@ -1,8 +1,8 @@
 #!/bin/sh
 # kFreeBSD do not accept scripts as interpreters, using #!/bin/sh and sourcing.
-if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
-    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
-fi
+#if [ true != "$INIT_D_SCRIPT_SOURCED" ] ; then
+#    set "$0" "$@"; INIT_D_SCRIPT_SOURCED=true . /lib/init/init-d-script
+#fi
 ### BEGIN INIT INFO
 # Provides:          skeleton
 # Required-Start:    $remote_fs $syslog
@@ -20,9 +20,10 @@ fi
 
 # Author: Aniket Shivam
 
-DESC="FPGA allocation daemon"
-DAEMON=/usr/sbin/fad
+DESC="FPGA Allocation Daemon"
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
 NAME=fad
+DAEMON=/usr/sbin/$NAME
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 CHUID=root
@@ -38,23 +39,29 @@ CHUID=root
 
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
-. /lib/lsb/init-functions
-
+#. /lib/lsb/init-functions
 #
 # Function that starts the daemon/service
 #
+echo "it reached before start"
+
 do_start()
 {
    # Return
    #   0 if daemon has been started
    #   1 if daemon was already running
    #   2 if daemon could not be started
-   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
+   echo "it started start user"
+   start-stop-daemon --start --quiet --pidfile $PIDFILE --make-pidfile --exec $DAEMON --test > /dev/null \
       || return 1
-   start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE --exec $DAEMON -- \
+   echo "it started start root"
+   start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE  --exec $DAEMON -- \
       $DAEMON_ARGS \
       || return 2
+   echo "it is done by starting root"
 }
+
+echo "it reached before stop"
 
 #
 # Function that stops the daemon/service
@@ -81,6 +88,7 @@ do_stop()
    rm -f $PIDFILE
    return "$RETVAL"
 }
+echo "it reached before reload"
 
 #
 # Function that sends a SIGHUP to the daemon/service
@@ -94,10 +102,11 @@ do_reload() {
    start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
    return 0
 }
+echo "it reached after reload"
 
 case "$1" in
   start)
-   [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+   echo "Starting $DESC:" "$NAME"
    do_start
    case "$?" in
       0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
