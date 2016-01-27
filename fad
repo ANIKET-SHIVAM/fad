@@ -55,7 +55,7 @@ do_start()
    start-stop-daemon --start --quiet --pidfile $PIDFILE --make-pidfile --exec $DAEMON --test > /dev/null \
       || return 1
    echo "it started start root"
-   start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE  --exec $DAEMON -- \
+   start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE --make-pidfile --exec $DAEMON -- \
       $DAEMON_ARGS \
       || return 2
    echo "it is done by starting root"
