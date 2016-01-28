@@ -7,13 +7,15 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <string.h>
+#include<ctime>
 
 using namespace std;
 
 #define DAEMON_NAME "fad"
 
-void process(int i, int pid){
-    syslog (LOG_NOTICE, "Writing to %d's %dth Syslog",pid,i);
+void process(){
+//    syslog (LOG_NOTICE, "Writing to Syslog");
+    system("cat /home/aniket/fad/blackhole/*");
 }   
 
 int main(int argc, char *argv[]) {
@@ -28,19 +30,24 @@ int main(int argc, char *argv[]) {
 
    //Fork the Parent Process to make 'process' autonomous (i.e. start-stop-daemon process in fad script ends)
     pid = fork();
-    syslog(LOG_NOTICE, "pid: %d",pid);
+//    syslog(LOG_NOTICE, "pid: %d",pid);
 
     if (pid < 0) {syslog(LOG_NOTICE, "Daemon couldn't create child process"); exit(EXIT_FAILURE); }
 
     //We got a good pid, Close the Parent Process
-    if (pid > 0) {syslog(LOG_NOTICE, "Daemon created a child process"); exit(EXIT_SUCCESS); }
+    if (pid > 0) {syslog(LOG_NOTICE, "Daemon created a autonomous child process"); exit(EXIT_SUCCESS); }
 
     if (pid == 0) { //child process
-    	int i = 1;
-    	while(i<6){
-        	sleep(5);    //Sleep for 60 seconds
-		process(i,pid);    //Run our Process
-        	i++;
+	struct stat sb;
+        if (!(stat("/home/aniket/fad/blackhole", &sb) == 0 && S_ISDIR(sb.st_mode))){
+        	system("mkdir /home/aniket/fad/blackhole");
+        	system("chmod 777 /home/aniket/fad/blackhole"); 
+	}
+	
+	std::clock_t start = std::clock();
+	while(std::clock()-start < 2*60*50){ //minutes<change it accordingly>*seconds*clocks_per_sec
+		sleep(5);    //Sleep for 5 seconds
+		process();    //Run our Process
 	}
 
     }

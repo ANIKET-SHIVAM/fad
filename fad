@@ -43,7 +43,6 @@ CHUID=root
 #
 # Function that starts the daemon/service
 #
-echo "it reached before start"
 
 do_start()
 {
@@ -51,17 +50,16 @@ do_start()
    #   0 if daemon has been started
    #   1 if daemon was already running
    #   2 if daemon could not be started
-   echo "it started start user"
+#   echo "it started start user"
    start-stop-daemon --start --quiet --pidfile $PIDFILE --make-pidfile --exec $DAEMON --test > /dev/null \
       || return 1
-   echo "it started start root"
+#   echo "it started start root"
    start-stop-daemon --start --quiet --chuid $CHUID --pidfile $PIDFILE --make-pidfile --exec $DAEMON -- \
       $DAEMON_ARGS \
       || return 2
-   echo "it is done by starting root"
+#   echo "it is done by starting root"
 }
 
-echo "it reached before stop"
 
 #
 # Function that stops the daemon/service
@@ -88,7 +86,6 @@ do_stop()
    rm -f $PIDFILE
    return "$RETVAL"
 }
-echo "it reached before reload"
 
 #
 # Function that sends a SIGHUP to the daemon/service
@@ -102,7 +99,6 @@ do_reload() {
    start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
    return 0
 }
-echo "it reached after reload"
 
 case "$1" in
   start)
