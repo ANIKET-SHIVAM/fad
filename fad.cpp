@@ -13,9 +13,11 @@ using namespace std;
 
 #define DAEMON_NAME "fad"
 
+#define BLACKHOLE_PATH "/home/jjbesavi/Work/OperatingSystems/fad/blackhole"
+
 void process(){
 //    syslog (LOG_NOTICE, "Writing to Syslog");
-    system("cat /home/aniket/fad/blackhole/*");
+    system("cat " BLACKHOLE_PATH "/*");
 }   
 
 int main(int argc, char *argv[]) {
@@ -39,13 +41,13 @@ int main(int argc, char *argv[]) {
 
     if (pid == 0) { //child process
 	struct stat sb;
-        if (!(stat("/home/aniket/fad/blackhole", &sb) == 0 && S_ISDIR(sb.st_mode))){
-        	system("mkdir /home/aniket/fad/blackhole");
-        	system("chmod 777 /home/aniket/fad/blackhole"); 
+        if (!(stat(BLACKHOLE_PATH, &sb) == 0 && S_ISDIR(sb.st_mode))){
+        	system("mkdir " BLACKHOLE_PATH);
+        	system("chmod 777 " BLACKHOLE_PATH); 
 	}
 	
 	std::clock_t start = std::clock();
-	while(std::clock()-start < 2*60*50){ //minutes<change it accordingly>*seconds*clocks_per_sec
+	while(std::clock()-start < 1*60*50){ //minutes<change it accordingly>*seconds*clocks_per_sec
 		sleep(5);    //Sleep for 5 seconds
 		process();    //Run our Process
 	}
