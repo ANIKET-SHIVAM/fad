@@ -9,8 +9,10 @@
 
 #define SOCK_PATH "echo_socket"
 
+#include <atomic>
 #include <condition_variable>
 #include <iostream>
+#include <functional>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -18,7 +20,7 @@
 using Socket = int;
 
 void
-echoHandler(Socket socket)
+echoHandler(Socket socket, short& finished)
 {
     int done, n;
     char str[100];
@@ -38,6 +40,7 @@ echoHandler(Socket socket)
     } while (!done);
 
     close(socket);
+    finished = true;
 }
 
 
@@ -61,14 +64,21 @@ public:
     {
         for(;;)
         {
-            Socket newConnection;
+            removeFinishedIOThreads();
 
+            Socket newConnection;
             while( (newConnection = getNewConnection() ) != -1)
             {
                 addNewDesign(newConnection);
 
-                ioThreads.emplace_back(echoHandler, newConnection);
+                ioThreadStatus.emplace_back(false);
+                ioThreads.emplace_back(echoHandler, newConnection, std::ref(ioThreadStatus.back()));
             }
+
+            // Compile new FPGA design...
+            // Stop IO Threads from
+            // Update FPGA
+            // Let IO Threads continue..
 
             std::unique_lock<std::mutex> wakeUpLock(wakeUpMutex);
             wakeUp.wait(wakeUpLock);
@@ -107,10 +117,27 @@ private:
         std::cout << "Got new design connection from " << newConnection << std::endl;
     }
 
+    void
+    removeFinishedIOThreads()
+    {
+        const bool finished = true;
+        for(size_t i = 0; i < ioThreads.size(); ++i)
+        {
+            if(ioThreadStatus[i] == finished)
+            {
+                ioThreads[i].join();
+                ioThreads.erase(ioThreads.begin() + i);
+                ioThreadStatus.erase(ioThreadStatus.begin() + i);
+                std::cout << "Removed connection " << i << std::endl;
+            }
+        }
+    }
+
     std::vector<Socket> unhandledConnections;
     std::mutex          unhandledConnectionsMutex;
 
     IOThreads  ioThreads;
+    std::vector<short> ioThreadStatus; // false == running, true == finished
 
     std::condition_variable wakeUp;
     std::mutex              wakeUpMutex;
