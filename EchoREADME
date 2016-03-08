@@ -1,0 +1,11 @@
+To Compile the Echo example:
+
+Server:
+g++ -std=c++11 -pthread echoServer.cpp -o Server
+Client:
+gcc echoClient.c -o Client
+
+To Run
+
+Run the server in one window and n clients in the other windows. The server just repeats what the clients says back...
+The server creates a socket in the directory called echo_socket.
