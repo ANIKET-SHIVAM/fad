@@ -21,11 +21,12 @@ using namespace std;
 void process(){
 //    syslog (LOG_NOTICE, "Writing to Syslog");
 //    system("cat " BLACKHOLE_PATH "/*");
-    system("python "FAD_PATH"/merge.py");
-    system("rm -rf "VERILOG_SRC_PATH"/*");
-    system("cp "BLACKHOLE_PATH"/offspring.c "VERILOG_SRC_PATH);
-    system("cp "BLACKHOLE_PATH"/Makefile "VERILOG_SRC_PATH);
-    system("make -C " VERILOG_SRC_PATH"/");
+    system("python "FAD_PATH"/merge.py");                       //Merge programs
+    system("rm -rf "VERILOG_SRC_PATH"/*");                      //Clear old verilog files
+    system("cp "BLACKHOLE_PATH"/offspring.c "VERILOG_SRC_PATH); //Copy new program files
+    system("cp "BLACKHOLE_PATH"/Makefile "VERILOG_SRC_PATH);    //Copy Makefile 
+    system("make -C " VERILOG_SRC_PATH"/");                     //Generate verilog for ModelSim to execute
+    system("make v -C " VERILOG_SRC_PATH"/");                   //Synthesize/Run on ModelSim
 }   
 
 int main(int argc, char *argv[]) {
@@ -56,7 +57,6 @@ int main(int argc, char *argv[]) {
 	
 	std::clock_t start = std::clock();
 	while(std::clock()-start < 1*60){ //minutes<change it accordingly>*seconds
-		sleep(5);    //Sleep for 5 seconds
 		process();    //Run our Process
 		sleep(60);
 	}
