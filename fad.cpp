@@ -25,8 +25,9 @@ void process(){
     system("rm -rf "VERILOG_SRC_PATH"/*");                      //Clear old verilog files
     system("cp "BLACKHOLE_PATH"/offspring.c "VERILOG_SRC_PATH); //Copy new program files
     system("cp "BLACKHOLE_PATH"/Makefile "VERILOG_SRC_PATH);    //Copy Makefile 
-    system("make -C " VERILOG_SRC_PATH"/");                     //Generate verilog for ModelSim to execute
-    system("make v -C " VERILOG_SRC_PATH"/");                   //Synthesize/Run on ModelSim
+    system("make -C " VERILOG_SRC_PATH"/ -s");                  //Generate verilog for ModelSim to execute
+    system("make v -C " VERILOG_SRC_PATH"/ > "BLACKHOLE_PATH"/aftermath -s"); //Synthesize/Run on ModelSim
+    system("python "FAD_PATH"/extract.py");
 }   
 
 int main(int argc, char *argv[]) {
