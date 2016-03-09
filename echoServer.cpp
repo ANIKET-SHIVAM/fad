@@ -27,14 +27,14 @@ struct PCI_Connection
     inputOutput()
     {
         LockGuard lock(inUseMutex);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     void
     reconfigure()
     {
         LockGuard lock(inUseMutex);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::seconds(10));
     }
 
     std::mutex inUseMutex;
@@ -165,8 +165,11 @@ public:
                 startNewIoThreads();
             }
 
-            std::unique_lock<std::mutex> wakeUpLock(wakeUpMutex);
-            wakeUp.wait(wakeUpLock);
+            if(!areThereNewConnections())
+            {
+                std::unique_lock<std::mutex> wakeUpLock(wakeUpMutex);
+                wakeUp.wait(wakeUpLock);
+            }
         }
     }
 
@@ -195,6 +198,13 @@ private:
             unhandledConnections.pop_back();
             return newConnection;
         }
+    }
+
+    bool
+    areThereNewConnections()
+    {
+        LockGuard lock(unhandledConnectionsMutex);
+        return !unhandledConnections.empty();
     }
 
     void
