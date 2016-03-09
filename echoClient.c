@@ -31,6 +31,12 @@ int main(void)
 
     printf("Connected.\n");
 
+
+    if (send(s, "Design Path", 11, 0) == -1) {
+        perror("send");
+        exit(1);
+    }
+
     while(printf("> "), fgets(str, 100, stdin), !feof(stdin)) {
         if (send(s, str, strlen(str), 0) == -1) {
             perror("send");

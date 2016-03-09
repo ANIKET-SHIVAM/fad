@@ -10,6 +10,7 @@
 #define SOCK_PATH "echo_socket"
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <iostream>
 #include <functional>
@@ -17,36 +18,104 @@
 #include <thread>
 #include <vector>
 
-using Socket = int;
+using Socket    = int;
+using LockGuard = std::lock_guard<std::mutex>;
 
-void
-echoHandler(Socket socket, short& finished)
+struct PCI_Connection
 {
-    int done, n;
-    char str[100];
-    done = 0;
-    do {
-        n = recv(socket, str, 100, 0);
-        if (n <= 0) {
-            if (n < 0) perror("recv");
-            done = 1;
+    void
+    inputOutput()
+    {
+        LockGuard lock(inUseMutex);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    void
+    reconfigure()
+    {
+        LockGuard lock(inUseMutex);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    std::mutex inUseMutex;
+};
+
+class IO_Handler
+{
+    enum Status { NOT_STARTED, RUNNING, FINISHED};
+public:
+
+    IO_Handler(std::string designPath_, Socket socket_, PCI_Connection& pciConnection_)
+    : designPath(designPath_), status(Status::NOT_STARTED), socket(socket_), pciConnection(pciConnection_)
+    {}
+
+    std::thread
+    spawn()
+    {
+        status = Status::RUNNING;
+        return std::thread( [this] { this->run(); });
+    }
+
+    void
+    run()
+    {
+        int done, n;
+        char str[100];
+        done = 0;
+        try{
+            do {
+                n = recv(socket, str, 100, 0);
+                if (n <= 0) {
+                    if (n < 0) perror("recv");
+                    done = 1;
+                }
+
+                if (!done) 
+                    pciConnection.inputOutput();
+                    if (send(socket, str, n, MSG_NOSIGNAL) < 0) {
+                        perror("send");
+                        done = 1;
+                    }
+            } while (!done);
+        }
+        catch(std::exception const& )
+        {
+            std::cout << "Lost connection!!\n";
         }
 
-        if (!done) 
-            if (send(socket, str, n, 0) < 0) {
-                perror("send");
-                done = 1;
-            }
-    } while (!done);
+        {
+        LockGuard lock(statusMutex);
+        close(socket);
+        status = Status::FINISHED;
+        }
+    }
 
-    close(socket);
-    finished = true;
-}
+    bool
+    notStarted()
+    {
+        LockGuard lock(statusMutex);
+        return status == Status::NOT_STARTED;
+    }
 
+    bool
+    finished()
+    {
+        LockGuard lock(statusMutex);
+        return status == Status::FINISHED;
+    }
+
+private:
+    std::string designPath;
+    Status status;
+    std::mutex statusMutex;
+    Socket socket;
+    PCI_Connection& pciConnection;
+};
 
 class DesignHandler
 {
-    using IOThreads = std::vector<std::thread>; 
+    using IOThreads   = std::vector<std::thread*>; 
+    using IO_Handlers = std::vector<IO_Handler*>;
 
 public:
     DesignHandler()
@@ -62,6 +131,9 @@ public:
     void
     run()
     {
+        PCI_Connection pciConnection; // Open the connection...
+        char designPath[100];
+
         for(;;)
         {
             removeFinishedIOThreads();
@@ -69,16 +141,29 @@ public:
             Socket newConnection;
             while( (newConnection = getNewConnection() ) != -1)
             {
-                addNewDesign(newConnection);
+                std::cout << "Got new design connection from " << newConnection << std::endl;
+                int n;
+                n = recv(newConnection, designPath, 100, 0);
+                if(n <= 0)
+                {
+                    if(n < 0) perror("design recv");
+                    continue;
+                }
 
-                ioThreadStatus.emplace_back(false);
-                ioThreads.emplace_back(echoHandler, newConnection, std::ref(ioThreadStatus.back()));
+                // Validate design name
+                std::cout << "Design path is: " << designPath << std::endl;
+
+                ioHandlers.push_back(new IO_Handler(std::string(designPath), newConnection, pciConnection)); 
             }
 
-            // Compile new FPGA design...
-            // Stop IO Threads from
-            // Update FPGA
-            // Let IO Threads continue..
+            removeFinishedIOThreads();
+
+            if(!ioHandlers.empty())
+            {
+                compileNewDesign();
+                reconfigureFPGA(pciConnection);
+                startNewIoThreads();
+            }
 
             std::unique_lock<std::mutex> wakeUpLock(wakeUpMutex);
             wakeUp.wait(wakeUpLock);
@@ -89,7 +174,7 @@ public:
     newConnection(Socket s)
     {
         {
-        std::lock_guard<std::mutex> lock(unhandledConnectionsMutex);
+        LockGuard lock(unhandledConnectionsMutex);
         unhandledConnections.push_back(s);
         }
 
@@ -97,10 +182,11 @@ public:
     }
 
 private:
+
     Socket
     getNewConnection()
     {
-        std::lock_guard<std::mutex> lock(unhandledConnectionsMutex);
+        LockGuard lock(unhandledConnectionsMutex);
         if(unhandledConnections.empty())
             return -1;
         else
@@ -112,32 +198,63 @@ private:
     }
 
     void
-    addNewDesign(Socket newConnection)
+    removeFinishedIOThreads()
     {
-        std::cout << "Got new design connection from " << newConnection << std::endl;
+        for(size_t i = 0; i < ioHandlers.size(); /*increment inside*/)
+        {
+            if(ioHandlers[i]->finished())
+            {
+                ioThreads[i]->join();
+                delete ioHandlers[i];
+                ioHandlers.erase(ioHandlers.begin() + i);
+                delete ioThreads[i];
+                ioThreads.erase(ioThreads.begin() + i);
+                std::cout << "Removed connection " << i << std::endl;
+                // No Increment
+            }
+            else
+            {
+                ++i;
+            }
+        }
+    }
+
+    // Lock on IOThreads must be taken
+    void
+    compileNewDesign()
+    {
+        std::cout << "Starting to compile new design for " << ioHandlers.size() << " clients" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::cout << "Finished Compiling new design!\n";
     }
 
     void
-    removeFinishedIOThreads()
+    startNewIoThreads()
     {
-        const bool finished = true;
-        for(size_t i = 0; i < ioThreads.size(); ++i)
+        //std::cout << "Starting new IO Threads " 
+        //          << ioHandlers.size() << " " << ioThreads.size() << std::endl;
+        for(auto& handler : ioHandlers)
         {
-            if(ioThreadStatus[i] == finished)
+            if(handler->notStarted())
             {
-                ioThreads[i].join();
-                ioThreads.erase(ioThreads.begin() + i);
-                ioThreadStatus.erase(ioThreadStatus.begin() + i);
-                std::cout << "Removed connection " << i << std::endl;
+                ioThreads.push_back(new std::thread(handler->spawn()));
             }
         }
+        //std::cout << "Finished starting new threads" 
+        //          << ioHandlers.size() << " " << ioThreads.size() << std::endl;
+    }
+
+    void
+    reconfigureFPGA(PCI_Connection& pciConnection)
+    {
+        pciConnection.reconfigure();   
     }
 
     std::vector<Socket> unhandledConnections;
     std::mutex          unhandledConnectionsMutex;
 
-    IOThreads  ioThreads;
-    std::vector<short> ioThreadStatus; // false == running, true == finished
+    IO_Handlers ioHandlers;
+    IOThreads   ioThreads;
 
     std::condition_variable wakeUp;
     std::mutex              wakeUpMutex;
