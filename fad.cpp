@@ -13,11 +13,20 @@ using namespace std;
 
 #define DAEMON_NAME "fad"
 
-#define BLACKHOLE_PATH "/home/jjbesavi/Work/OperatingSystems/fad/blackhole"
+#define FAD_PATH "/home/aniket/fad"
 
+#define BLACKHOLE_PATH "/home/aniket/fad/blackhole"
+
+#define VERILOG_SRC_PATH "/home/aniket/fad/blackhole/verilog"
 void process(){
 //    syslog (LOG_NOTICE, "Writing to Syslog");
-    system("cat " BLACKHOLE_PATH "/*");
+//    system("cat " BLACKHOLE_PATH "/*");
+    system("python "FAD_PATH"/merge.py");                       //Merge programs
+    system("rm -rf "VERILOG_SRC_PATH"/*");                      //Clear old verilog files
+    system("cp "BLACKHOLE_PATH"/offspring.c "VERILOG_SRC_PATH); //Copy new program files
+    system("cp "BLACKHOLE_PATH"/Makefile "VERILOG_SRC_PATH);    //Copy Makefile 
+    system("make -C " VERILOG_SRC_PATH"/");                     //Generate verilog for ModelSim to execute
+    system("make v -C " VERILOG_SRC_PATH"/");                   //Synthesize/Run on ModelSim
 }   
 
 int main(int argc, char *argv[]) {
@@ -43,13 +52,13 @@ int main(int argc, char *argv[]) {
 	struct stat sb;
         if (!(stat(BLACKHOLE_PATH, &sb) == 0 && S_ISDIR(sb.st_mode))){
         	system("mkdir " BLACKHOLE_PATH);
-        	system("chmod 777 " BLACKHOLE_PATH); 
+        	system("chmod 775 " BLACKHOLE_PATH); 
 	}
 	
 	std::clock_t start = std::clock();
-	while(std::clock()-start < 1*60*50){ //minutes<change it accordingly>*seconds*clocks_per_sec
-		sleep(5);    //Sleep for 5 seconds
+	while(std::clock()-start < 1*60){ //minutes<change it accordingly>*seconds
 		process();    //Run our Process
+		sleep(60);
 	}
 
     }
