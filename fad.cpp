@@ -9,6 +9,8 @@
 #include <string.h>
 #include<ctime>
 
+#include "designServer.cpp"
+
 using namespace std;
 
 #define DAEMON_NAME "fad"
@@ -21,13 +23,13 @@ using namespace std;
 void process(){
 //    syslog (LOG_NOTICE, "Writing to Syslog");
 //    system("cat " BLACKHOLE_PATH "/*");
-    system("python "FAD_PATH"/merge.py");                       //Merge programs
-    system("rm -rf "VERILOG_SRC_PATH"/*");                      //Clear old verilog files
-    system("cp "BLACKHOLE_PATH"/offspring.c "VERILOG_SRC_PATH); //Copy new program files
-    system("cp "BLACKHOLE_PATH"/Makefile "VERILOG_SRC_PATH);    //Copy Makefile 
-    system("make -C " VERILOG_SRC_PATH"/ -s");                  //Generate verilog for ModelSim to execute
-    system("make v -C " VERILOG_SRC_PATH"/ > "BLACKHOLE_PATH"/aftermath -s"); //Synthesize/Run on ModelSim
-    system("python "FAD_PATH"/extract.py");
+    system("python " FAD_PATH "/merge.py");                       //Merge programs
+    system("rm -rf " VERILOG_SRC_PATH "/*");                      //Clear old verilog files
+    system("cp " BLACKHOLE_PATH "/offspring.c " VERILOG_SRC_PATH); //Copy new program files
+    system("cp " BLACKHOLE_PATH "/Makefile " VERILOG_SRC_PATH);    //Copy Makefile 
+    system("make -C " VERILOG_SRC_PATH "/ -s");                  //Generate verilog for ModelSim to execute
+    system("make v -C " VERILOG_SRC_PATH "/ > " BLACKHOLE_PATH "/aftermath -s"); //Synthesize/Run on ModelSim
+    system("python " FAD_PATH "/extract.py");
 }   
 
 int main(int argc, char *argv[]) {
@@ -50,18 +52,21 @@ int main(int argc, char *argv[]) {
     if (pid > 0) {syslog(LOG_NOTICE, "Daemon created a autonomous child process"); exit(EXIT_SUCCESS); }
 
     if (pid == 0) { //child process
-	struct stat sb;
+        struct stat sb;
         if (!(stat(BLACKHOLE_PATH, &sb) == 0 && S_ISDIR(sb.st_mode))){
         	system("mkdir " BLACKHOLE_PATH);
         	system("chmod 775 " BLACKHOLE_PATH); 
 	}
 	
+       executeServer();
+
+       /*
 	std::clock_t start = std::clock();
 	while(std::clock()-start < 1*60){ //minutes<change it accordingly>*seconds
 		process();    //Run our Process
 		sleep(60);
 	}
-
+       */
     }
     //Change File Mask
     umask(0);

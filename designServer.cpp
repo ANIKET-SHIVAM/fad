@@ -164,7 +164,7 @@ private:
 };
 
 
-int main(void)
+int executeServer()
 {
     int s, s2, len;
     socklen_t t;

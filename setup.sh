@@ -2,7 +2,7 @@
 
 #compile and save program that will run as a service in /usr/sbin
 
-sudo gcc fad.cpp -o /usr/sbin/fad
+sudo g++ -std=c++11 -pthread fad.cpp -o /usr/sbin/fad
 
 #move daemon script to /etc/init.d
 
