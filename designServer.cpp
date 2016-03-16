@@ -7,7 +7,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-#define SOCK_PATH "design_socket"
+#define SOCK_PATH "/home/aniket/fad/design_socket"
 
 #include <atomic>
 #include <chrono>
@@ -39,9 +39,8 @@ public:
         }
         close(socket);
     }
-
-private:
     std::string designPath;
+private:    
     Socket socket;
 };
 
@@ -138,9 +137,30 @@ private:
     void
     compileNewDesign()
     {
-        std::cout << "Starting to compile new design for " << ioHandlers.size() << " clients" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(10));
-        std::cout << "Finished Compiling new design!\n";
+	std::cout << "Starting to compile new design for " << ioHandlers.size() << " clients" << std::endl;
+	system("rm -f " BLACKHOLE_PATH "/seeds/*");
+	for(int cl = 0; cl < ioHandlers.size(); cl++) 	
+	{
+	    std::string command = "cp "+ioHandlers[cl].designPath+" " BLACKHOLE_PATH "/seeds/";
+	    system(command.c_str());   
+	}
+	
+	{
+		std::string command = "python " FAD_PATH "/merge.py -c " + std::to_string(ioHandlers.size());
+		system(command.c_str());                       //Merge programs
+	}
+	system("rm -rf " VERILOG_SRC_PATH "/*");                      //Clear old verilog files
+	system("cp " BLACKHOLE_PATH "/offspring.c " VERILOG_SRC_PATH); //Copy new program files
+	system("cp " BLACKHOLE_PATH "/Makefile " VERILOG_SRC_PATH);    //Copy Makefile 
+	system("make -C " VERILOG_SRC_PATH "/ -s");                  //Generate verilog for ModelSim to execute
+	system("make v -C " VERILOG_SRC_PATH "/ > " BLACKHOLE_PATH "/aftermath -s"); //Synthesize/Run on ModelSim
+	{
+		std::string command = "python " FAD_PATH "/extract.py -c " + std::to_string(ioHandlers.size());
+		system(command.c_str());                       //Merge programs
+	}
+	
+	std::this_thread::sleep_for(std::chrono::seconds(5));
+	std::cout << "Finished Compiling new design!\n";
     }
 
     void

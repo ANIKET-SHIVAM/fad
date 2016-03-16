@@ -8,17 +8,24 @@
 
 #define SOCK_PATH "design_socket"
 
-int main(void)
+int main(int argc, char* argv[])
 {
     int s, t, len;
     struct sockaddr_un remote;
     char str[100];
+
+    if(argc != 2)
+    {
+		printf("Incorrect number of arguments. Should be 1\n");
+		return 0;
+	}
 
     if ((s = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         perror("socket");
         exit(1);
     }
 
+	printf("Design file is %s\n", argv[1]); 
     printf("Trying to connect...\n");
 
     remote.sun_family = AF_UNIX;
@@ -31,8 +38,8 @@ int main(void)
 
     printf("Connected.\n");
 
-
-    if (send(s, "Design Path", 11, 0) == -1) {
+	int size = strlen(argv[1]);
+    if (send(s, argv[1], size, 0) == -1) {
         perror("send");
         exit(1);
     }

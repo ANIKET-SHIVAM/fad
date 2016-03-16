@@ -6,7 +6,7 @@ def main(argv):
 		opts, args = getopt.getopt(argv,"c:i:")
 		for opt, arg in opts:
 			if opt == '-c':
-				CLIENTS = arg
+				CLIENTS = int(arg)
 			if opt == "-i":
 				PATH_BLACKHOLE = arg
 	except getopt.GetoptError:

@@ -9,9 +9,6 @@
 #include <string.h>
 #include<ctime>
 
-#include "designServer.cpp"
-
-using namespace std;
 
 #define DAEMON_NAME "fad"
 
@@ -20,6 +17,11 @@ using namespace std;
 #define BLACKHOLE_PATH "/home/aniket/fad/blackhole"
 
 #define VERILOG_SRC_PATH "/home/aniket/fad/blackhole/verilog"
+
+#include "designServer.cpp"
+
+using namespace std;
+
 void process(){
 //    syslog (LOG_NOTICE, "Writing to Syslog");
 //    system("cat " BLACKHOLE_PATH "/*");
