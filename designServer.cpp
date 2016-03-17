@@ -212,6 +212,7 @@ int executeServer()
 
     DesignHandler handler;
     std::thread handlerThread = handler.spawn();
+    system("chmod 777 " SOCK_PATH);
     for(;;) {
         printf("Waiting for a connection...\n");
         t = sizeof(remote);

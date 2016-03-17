@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <syslog.h>
 #include <string.h>
-#include<ctime>
+#include <ctime>
 
 
 #define DAEMON_NAME "fad"
@@ -22,7 +22,7 @@
 
 using namespace std;
 
-void process(){
+/*void process(){
 //    syslog (LOG_NOTICE, "Writing to Syslog");
 //    system("cat " BLACKHOLE_PATH "/*");
     system("python " FAD_PATH "/merge.py");                       //Merge programs
@@ -32,7 +32,7 @@ void process(){
     system("make -C " VERILOG_SRC_PATH "/ -s");                  //Generate verilog for ModelSim to execute
     system("make v -C " VERILOG_SRC_PATH "/ > " BLACKHOLE_PATH "/aftermath -s"); //Synthesize/Run on ModelSim
     system("python " FAD_PATH "/extract.py");
-}   
+}*/   
 
 int main(int argc, char *argv[]) {
      
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         struct stat sb;
         if (!(stat(BLACKHOLE_PATH, &sb) == 0 && S_ISDIR(sb.st_mode))){
         	system("mkdir " BLACKHOLE_PATH);
-        	system("chmod 775 " BLACKHOLE_PATH); 
+        	system("chmod 777 " BLACKHOLE_PATH); 
 	}
 	
        executeServer();
